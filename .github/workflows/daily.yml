@@ -1,37 +1,37 @@
 name: KCC Daily Monitoring
+
 on:
   schedule:
     - cron: '30 23 * * *'
   workflow_dispatch:
+
 jobs:
   run-crawler:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4  # v3에서 v4로 업데이트
+      - uses: actions/checkout@v4
+      
       - name: Set up Python
-        uses: actions/setup-python@v5  # v4에서 v5로 업데이트
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          
       - name: Install dependencies
         run: pip install -r requirements.txt
+        
       - name: Run Scraper
         env:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        - name: Run Scraper
-        env:
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
-          MAIL_TO: ${{ secrets.MAIL_TO }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          PYTHONPATH: ${{ github.workspace }}  # 이 줄을 추가하면 경로 문제가 해결됩니다.
+          PYTHONPATH: ${{ github.workspace }}
         run: python -m src.main
-      - name: Commit changes
+        
+      - name: Commit and Push changes
         run: |
           git config --global user.name "bot"
           git config --global user.email "bot@github.com"
           git add data/seen.json
-          git commit -m "Update seen data" || exit 0
+          git commit -m "Update seen data [skip ci]" || echo "No changes to commit"
           git push
