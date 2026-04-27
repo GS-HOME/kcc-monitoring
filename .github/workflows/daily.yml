@@ -20,7 +20,14 @@ jobs:
           SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: python src/main.py
+        - name: Run Scraper
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PYTHONPATH: ${{ github.workspace }}  # 이 줄을 추가하면 경로 문제가 해결됩니다.
+        run: python -m src.main
       - name: Commit changes
         run: |
           git config --global user.name "bot"
