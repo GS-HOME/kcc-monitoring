@@ -20,8 +20,14 @@ def get_post_list(board_name, params):
         with urllib.request.urlopen(req, context=context, timeout=30) as response:
             html = response.read().decode('utf-8')
             soup = BeautifulSoup(html, 'html.parser')
-            items = soup.find_all('item')
             
+            # 파이썬 리스트 슬라이싱을 이용해 가장 최근 게시글 1개만 추출
+            items = soup.find_all('item')[:1]
+            
+            if not items:
+                print(f"[{board_name}] 항목 없음 (응답 길이: {len(html)}바이트, 서버 차단 의심)")
+                return []
+                
             posts = []
             for item in items:
                 title = item.find('title').get_text(strip=True) if item.find('title') else "제목 없음"
@@ -34,7 +40,7 @@ def get_post_list(board_name, params):
                     'content': "",
                     'attachments': []
                 })
-            print(f"[{board_name}] 1페이지 목록 {len(posts)}개 확인")
+            print(f"[{board_name}] 최신글 1개 목록 수집 완료")
             return posts
     except Exception as e:
         print(f"[{board_name}] 목록 수집 에러: {e}")
