@@ -2,7 +2,7 @@ name: KCC Daily Monitoring
 
 on:
   schedule:
-    - cron: '30 23 * * *'
+    - cron: '17 1 * * *'
   workflow_dispatch:
 
 jobs:
@@ -24,7 +24,6 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           PYTHONPATH: ${{ github.workspace }}
         run: python -m src.main
         
