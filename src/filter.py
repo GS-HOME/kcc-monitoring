@@ -6,17 +6,13 @@ def check_keywords(item):
     text_to_search = " ".join(text_parts)
 
     for ex in EXCLUDE_KEYWORDS:
-        if ex in text_to_search:
-            return False
-
+        if ex in text_to_search: return False
     for high in HIGH_PRIORITY_KEYWORDS:
         if high in text_to_search:
             item['matched_keyword'] = high
             return True
-
     for inc in INCLUDE_KEYWORDS:
         if inc in text_to_search:
             item['matched_keyword'] = inc
             return True
-
     return False

@@ -4,9 +4,7 @@ from email.mime.text import MIMEText
 from src.config import *
 
 def send_mail(items, date_str):
-    if not items and not SEND_EMPTY_MAIL:
-        return
-    
+    if not items and not SEND_EMPTY_MAIL: return
     count = len(items)
     subject = f"[방통위 모니터링] {date_str} 신규 자료 {count}건"
     
@@ -18,7 +16,7 @@ def send_mail(items, date_str):
             summary = it.get('content', '')[:200]
             html += f"<div style='border:1px solid #ddd; padding:15px; margin-bottom:15px; border-left:5px solid #0055ff;'>"
             html += f"<h3>[{it['board_name']}] {it['title']}</h3>"
-            html += f"<p>{summary}...</p>"
+            html += f"<p>{summary}</p>"
             html += f"<p><a href='{it['url']}'>원문 바로가기</a></p></div>"
 
     msg = MIMEMultipart('alternative')
@@ -27,10 +25,12 @@ def send_mail(items, date_str):
     msg['To'] = MAIL_TO
     msg.attach(MIMEText(html, 'html'))
     
+    # 10054 강제 종료 에러 방지를 위해 포트 587 및 starttls() 방식으로 복구
     try:
-        # 기존에 정상 작동하던 587 포트 방식으로 원복
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=60) as server:
+            server.ehlo()
             server.starttls()
+            server.ehlo()
             server.login(SMTP_USER, SMTP_APP_PASSWORD)
             server.sendmail(SMTP_USER, MAIL_TO, msg.as_string())
             print(f"메일 발송 성공! (수신: {MAIL_TO})")
