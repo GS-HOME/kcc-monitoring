@@ -1,7 +1,9 @@
-import requests
+import urllib.request
+import urllib.parse
 from bs4 import BeautifulSoup
 import time
 import random
+import ssl
 from src.config import RSS_BASE_URL
 
 def get_post_list(board_name, params):
@@ -9,14 +11,19 @@ def get_post_list(board_name, params):
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     }
-
+    
+    url_with_params = RSS_BASE_URL + "?" + urllib.parse.urlencode(params)
+    
     try:
         time.sleep(random.uniform(5.0, 15.0))
         
-        response = requests.get(RSS_BASE_URL, params=params, headers=headers, timeout=30)
+        req = urllib.request.Request(url_with_params, headers=headers)
+        context = ssl._create_unverified_context()
         
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
+        with urllib.request.urlopen(req, context=context, timeout=30) as response:
+            html = response.read().decode('utf-8')
+            
+            soup = BeautifulSoup(html, 'html.parser')
             items = soup.find_all('item')
             
             posts = []
@@ -34,9 +41,6 @@ def get_post_list(board_name, params):
                 })
             print(f"[{board_name}] {len(posts)}개 항목 수집 완료")
             return posts
-        else:
-            print(f"[{board_name}] 접속 실패 (상태 코드: {response.status_code})")
-            return []
     except Exception as e:
         print(f"[{board_name}] 수집 중 에러: {e}")
         return []
