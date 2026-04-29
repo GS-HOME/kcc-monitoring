@@ -5,6 +5,7 @@ import urllib.parse
 from curl_cffi import requests
 from src.config import RSS_BASE_URL
 import urllib3
+import re
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -75,18 +76,29 @@ def get_post_detail(item):
         
         # "제목" 단어 포함 여부에 따른 텍스트 슬라이싱 로직
         if "제목" in raw_text:
-            # "제목" 이후의 데이터만 추출
-            item['content'] = raw_text.split("제목", 1)[1].strip()
+            content_after_title = raw_text.split("제목", 1)[1]
         else:
-            item['content'] = raw_text
+            content_after_title = raw_text
+
+        # 정규표현식을 통해 "등록일" 뒤의 YYYY-MM-DD 추출
+        date_match = re.search(r'등록일.*?(\d{4}-\d{2}-\d{2})', content_after_title)
+        if date_match:
+            item['date'] = date_match.group(1)
+        else:
+            # "등록일" 단어가 없을 경우 날짜 형식만 단독 추출하는 예외 처리
+            backup_match = re.search(r'(\d{4}-\d{2}-\d{2})', content_after_title)
+            item['date'] = backup_match.group(1) if backup_match else "1970-01-01"
+
+        item['content'] = content_after_title.strip()
         
         files = []
         for f in soup.select('.fileList a'):
             files.append(f.get_text(strip=True))
         item['attachments'] = files
         
-        print(f"  -> 상세 데이터 수집 완료: {item['title'][:15]}")
+        print(f"  -> 상세 데이터 수집 완료 (등록일: {item['date']}): {item['title'][:15]}")
     except Exception as e:
         print(f"  -> 상세 페이지 접속 에러: {e}")
         item['content'] = "접속 에러로 본문 수집 실패"
+        item['date'] = "1970-01-01"
     return item
