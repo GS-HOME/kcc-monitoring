@@ -35,38 +35,52 @@ def get_post_list(board_name, params):
             )
             
             soup = BeautifulSoup(response.text, 'html.parser')
-            items = soup.select('table tbody tr') 
+            rows = soup.select('table tbody tr') 
             
-            if not items:
+            if not rows:
                 print(f"[{board_name}] 게시글 목록 추출 실패")
                 return []
                 
             posts = []
-            for item in items:
-                a_tag = item.select_one('a') 
-                title = a_tag.get_text(strip=True) if a_tag else "제목 없음"
+            for row in rows:
+                cols = row.select('td')
                 
-                href = a_tag.get('href', '') if a_tag else ""
-                link = urllib.parse.urljoin(RSS_BASE_URL, href) if href else target_url
-                
-                list_date_match = re.search(r'\d{4}-\d{2}-\d{2}', item.get_text())
-                list_date = list_date_match.group(0) if list_date_match else None
-
-                posts.append({
-                    'board_name': board_name, 'title': title, 'url': link,
-                    'content': "", 'attachments': [], 'date': list_date
-                })
+                # 심결정보 게시판 특수 처리 (번호, 안건번호, 제목, 첨부파일, 공공누리, 작성일 순)
+                if board_name == "심결정보" and len(cols) >= 6:
+                    title = cols[2].get_text(strip=True) # 제목 열
+                    date_val = cols[5].get_text(strip=True) # 작성일 열
+                    link = target_url # 상세 페이지가 없으므로 목록 주소 유지
+                    
+                    posts.append({
+                        'board_name': board_name, 'title': title, 'url': link,
+                        'content': f"안건번호: {cols[1].get_text(strip=True)}", 
+                        'attachments': [], 'date': date_val, 'is_direct': True
+                    })
+                else:
+                    # 일반 게시판 처리
+                    a_tag = row.select_one('a') 
+                    if not a_tag: continue
+                    
+                    title = a_tag.get_text(strip=True)
+                    href = a_tag.get('href', '')
+                    link = urllib.parse.urljoin(RSS_BASE_URL, href)
+                    
+                    posts.append({
+                        'board_name': board_name, 'title': title, 'url': link,
+                        'content': "", 'attachments': [], 'date': None, 'is_direct': False
+                    })
+                    
             print(f"[{board_name}] {len(posts)}개 항목 수집 완료")
             return posts
         except Exception as e:
             print(f"[{board_name}] 목록 수집 에러 (시도 {attempt}/{max_retries}): {e}")
-            if attempt == max_retries:
-                return []
+            if attempt == max_retries: return []
             time.sleep(5.0)
 
 def get_post_detail(item):
-    if item.get('date') and item['url'].endswith('boardId=1119'):
-        print(f"  -> [심결정보] 리스트 데이터 사용 (작성일: {item['date']}): {item['title'][:15]}")
+    # 목록에서 날짜와 제목을 이미 확정한 경우(심결정보 등) 상세 페이지 접속 생략
+    if item.get('is_direct'):
+        print(f"  -> [{item['board_name']}] 목록 데이터 사용 (날짜: {item['date']}): {item['title'][:15]}")
         return item
 
     max_retries = 3
@@ -91,7 +105,7 @@ def get_post_detail(item):
             date_match = re.search(r'(등록일|작성일).*?(\d{4}-\d{2}-\d{2})', content_after_title)
             if date_match:
                 item['date'] = date_match.group(2)
-            elif not item.get('date'):
+            else:
                 backup_match = re.search(r'(\d{4}-\d{2}-\d{2})', raw_text)
                 item['date'] = backup_match.group(1) if backup_match else "1970-01-01"
 
