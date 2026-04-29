@@ -21,9 +21,10 @@ def main():
             detail_item = get_post_detail(p)
             post_date = detail_item.get('date', '1970-01-01')
 
-            # 어제(28일) 또는 오늘(29일) 게시글만 수집
+            # 어제 또는 오늘 게시글만 수집
             if post_date >= yesterday_str:
-                if check_keywords(detail_item):
+                # 의사일정 게시판은 키워드 무시, 그 외 게시판은 키워드 검사 진행
+                if name == "의사일정" or check_keywords(detail_item):
                     detail_item['summary'] = summarize(detail_item)
                     matched_items.append(detail_item)
                 
