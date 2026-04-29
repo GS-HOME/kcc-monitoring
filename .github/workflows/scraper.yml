@@ -9,13 +9,15 @@ on:
 jobs:
   scrape_and_mail:
     runs-on: ubuntu-latest
+    
+    # Node.js 24 강제 사용 설정 추가
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
-      # 버전 업데이트: v3 -> v4
       - name: 저장소 체크아웃
         uses: actions/checkout@v4
 
-      # 버전 업데이트: v4 -> v5
       - name: 파이썬 환경 설정
         uses: actions/setup-python@v5
         with:
