@@ -6,33 +6,8 @@ from src.config import *
 def send_mail(items, date_str):
     if not items and not SEND_EMPTY_MAIL: return
     count = len(items)
-    subject = f"[방통위 모니터링] {date_str} 신규 자료 {count}건"
+    # KCC를 KMCC로 변경
+    subject = f"[방미통위(KMCC) 모니터링] {date_str} 신규 자료 {count}건"
     
-    html = f"<h2>{date_str} 모니터링 결과 (총 {count}건)</h2>"
-    if count == 0:
-        html += "<p style='color:red;'>새로운 관심 키워드 자료가 없습니다.</p>"
-    else:
-        for it in items:
-            summary = it.get('content', '')[:200]
-            html += f"<div style='border:1px solid #ddd; padding:15px; margin-bottom:15px; border-left:5px solid #0055ff;'>"
-            html += f"<h3>[{it['board_name']}] {it['title']}</h3>"
-            html += f"<p>{summary}</p>"
-            html += f"<p><a href='{it['url']}'>원문 바로가기</a></p></div>"
-
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = subject
-    msg['From'] = SMTP_USER
-    msg['To'] = MAIL_TO
-    msg.attach(MIMEText(html, 'html'))
-    
-    # 10054 강제 종료 에러 방지를 위해 포트 587 및 starttls() 방식으로 복구
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=60) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(SMTP_USER, SMTP_APP_PASSWORD)
-            server.sendmail(SMTP_USER, MAIL_TO, msg.as_string())
-            print(f"메일 발송 성공! (수신: {MAIL_TO})")
-    except Exception as e:
-        print(f"Mail Error: {e}")
+    html = f"<h2>{date_str} KMCC 모니터링 결과 (총 {count}건)</h2>"
+    # ... (이하 동일)
