@@ -2,7 +2,8 @@ name: KCC RSS Monitoring
 
 on:
   schedule:
-    - cron: '37 23 * * 0-4'
+    # 한국 시간(KST) 오전 9시 37분 (UTC 00:37) 실행
+    - cron: '37 0 * * 1-5'
   workflow_dispatch:
 
 jobs:
