@@ -2,15 +2,14 @@ name: KCC RSS Monitoring
 
 on:
   schedule:
-    # 한국 시간(KST) 오전 8시 37분 (UTC 기준 전날 23:37, 일~목)
-    - cron: '37 23 * * 0-4'
+    # 한국 시간(KST) 오전 7시 37분 (UTC 기준 전날 22:37, 일요일부터 목요일)
+    - cron: '37 22 * * 0-4'
   workflow_dispatch:
 
 jobs:
   scrape_and_mail:
     runs-on: ubuntu-latest
     
-    # Node.js 24 강제 사용 설정 추가
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
