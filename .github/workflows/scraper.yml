@@ -1,9 +1,9 @@
-name: KMCC RSS Monitoring
+name: KCC RSS Monitoring
 
 on:
   schedule:
-    # 한국 시간(KST) 오후 1시 00분 (UTC 기준 당일 04:00, 월요일부터 금요일까지)
-    - cron: '0 4 * * 1-5'
+    # 한국 시간(KST) 낮 12시 00분 (UTC 기준 당일 03:00, 월요일부터 금요일까지)
+    - cron: '0 3 * * 1-5'
   workflow_dispatch:
 
 jobs:
