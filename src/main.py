@@ -25,30 +25,42 @@ def main():
             post_date = detail_item.get('date', '1970-01-01')
 
             if post_date >= yesterday_str:
-                # 보도자료 게시판의 '####년 제##차 위원회' 제목 패턴 검사
                 is_mandatory_press = False
                 if name == "보도자료" and re.search(r'\d{4}년 제\d+차 위원회', detail_item['title']):
                     is_mandatory_press = True
 
-                # 의사일정이거나, 필수 보도자료이거나, 키워드 검사를 통과한 경우 수집
                 if name == "의사일정" or is_mandatory_press or check_keywords(detail_item):
+                    doc_type = ""
+                    if name == "의사일정":
+                        attachments = detail_item.get('attachments', [])
+                        if "속기록" in attachments:
+                            doc_type = "[속기록] "
+                        elif "회의록" in attachments:
+                            doc_type = "[회의록] "
+                        elif "의사일정" in attachments:
+                            doc_type = "[의사일정] "
+                        else:
+                            doc_type = "[의사일정] "
+
+                    modified_title = f"{doc_type}{detail_item['title']}"
+                    detail_item['title'] = modified_title
                     detail_item['summary'] = summarize(detail_item)
-                    
-                    p_hash = get_hash(name, detail_item['title'], detail_item['summary'], "summary_v1")
-                    
+
+                    p_hash = get_hash(name, modified_title, detail_item['summary'], "summary_v1")
+
                     if p_hash not in new_seen_hashes:
                         matched_items.append(detail_item)
                         new_seen_hashes.append(p_hash)
-                        print(f"  -> 신규 항목 수집: {detail_item['title'][:15]}")
+                        print(f"  -> 신규 항목 수집: {modified_title[:15]}")
                     else:
-                        print(f"  -> 중복 항목 건너뜀 (요약 기준): {detail_item['title'][:15]}")
-                
+                        print(f"  -> 중복 항목 건너뜀: {modified_title[:15]}")
+
     if matched_items or SEND_EMPTY_MAIL:
         print(f"메일 발송 시도: 발견된 항목 {len(matched_items)}건")
         send_mail(matched_items, today_str)
     else:
         print(f"{yesterday_str} 이후 등록된 신규 항목이 없습니다.")
-        
+
     save_seen(new_seen_hashes)
 
 if __name__ == "__main__":
