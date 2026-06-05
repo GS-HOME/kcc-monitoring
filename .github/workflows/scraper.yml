@@ -1,62 +1,42 @@
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
+name: KCC RSS Monitoring
 
-def get_post_list(board_name, params):
-    posts = []
-    try:
-        url = params.get('url')
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
+on:
+  schedule:
+    - cron: "0 3 * * 1-5"
+  workflow_dispatch:
 
-        rows = soup.select('table tbody tr')
-        for row in rows:
-            title_tag = row.select_one('a')
-            if title_tag:
-                title = title_tag.get_text(strip=True)
-                link = urljoin(url, title_tag.get('href', ''))
-                date_tag = row.select_one('.date')
-                post_date = date_tag.get_text(strip=True) if date_tag else '1970-01-01'
+jobs:
+  scrape_and_mail:
+    runs-on: ubuntu-latest
+    
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-                posts.append({
-                    'title': title,
-                    'link': link,
-                    'date': post_date
-                })
-    except Exception as e:
-        print(f"목록 수집 중 오류 발생: {e}")
-    return posts
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
 
-def get_post_detail(post_info):
-    try:
-        url = post_info.get('link', '')
-        if not url:
-            return post_info
+      - name: 파이썬 환경 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
+      - name: 필수 패키지 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-        attachments = []
-        file_elements = soup.select('img, a, span')
-        for el in file_elements:
-            text = el.get_text(strip=True) or el.get('alt', '')
-            if '의사일정' in text:
-                attachments.append('의사일정')
-            elif '회의록' in text:
-                attachments.append('회의록')
-            elif '속기록' in text:
-                attachments.append('속기록')
+      - name: 스크래핑 및 메일 발송 실행
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+        run: python -m src.main
 
-        post_info['attachments'] = list(set(attachments))
-
-        content_tag = soup.select_one('.board_article, .content')
-        post_info['content'] = content_tag.get_text(strip=True) if content_tag else ""
-
-    except Exception as e:
-        print(f"상세 내용 수집 중 오류 발생: {e}")
-        post_info['attachments'] = []
-        post_info['content'] = ""
-
-    return post_info
+      - name: 중복 방지 기록(seen_posts.txt) 자동 커밋 및 푸시
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add seen_posts.txt
+          git commit -m "chore: 수집된 게시글 해시 업데이트" || echo "변경된 해시 기록이 없습니다."
+          git push
